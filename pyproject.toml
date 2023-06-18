@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "aws-framework"
+version = "0.0.1"
+description = "A Demo Framework for the AWS Workshop"
+authors = ["Oscar Bahamonde <oscar.bahamonde@pucp.pe>"]
+readme = "README.md"
+packages = [{include = "aws_idp_framework"}]
+
+[tool.poetry.dependencies]
+python = ">=3.7,<4.0"
+aiohttp = "^3.8.4"
+pydantic = "^1.10.9"
+python-dotenv = "^0.19.1"
+aiohttp-sse = "^2.1.0"
+boto3 = "^1.26.155"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.3.2"
+pytest-mock = "^3.11.1"
+pytest-asyncio = "^0.21.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

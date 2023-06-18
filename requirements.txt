@@ -1,0 +1,3 @@
+aiohttp
+pydantic[dotenv]
+boto3
