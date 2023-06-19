@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 def asyncify(
-    func: typing.Callable,
+    func: typing.Callable[..., typing.Any],
 ) -> typing.Callable[..., typing.Awaitable[typing.Any]]:
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):

@@ -1,18 +1,13 @@
-import zipfile
-from datetime import datetime
-from io import BytesIO
 from typing import *
-from uuid import uuid4
 
 from aiohttp.web import FileField, Request
 from botocore import auth
-from pydantic import BaseModel  # pylint: disable=no-name-in-module
 
-from aws_framework import CloudAPI, CognitoClient, Field, NoSQLModel, S3Client
-from aws_framework._bucket import S3Client
+from aws_framework import CognitoClient, Field, NoSQLModel, S3Client
+from aws_framework._cloudflare import CloudFlare
 from aws_framework._config import cfg
 from aws_framework._github import GithubClient
-from aws_framework.utils import gen_port
+from ci import app
 from dockerclient import *
 
 
@@ -25,62 +20,11 @@ class User(NoSQLModel):
         False, description="The email verification status of the user"
     )
 
-
-class UserSignUp(BaseModel):
-    name: str
-    email: str
-    password: str
-    picture: Optional[str] = None
-
-
-class UserLogin(BaseModel):
-    username: str
-    password: str
-
-
-class UserConfirmForgot(BaseModel):
-    username: str
-    code: str
-    password: str
-
-
-class AuthenticationResult(BaseModel):
-    AccessToken: str
-    ExpiresIn: int
-    TokenType: str
-    RefreshToken: str
-    IdToken: str
-
-
-class GithubRepo(BaseModel):
-    name: str
-    full_name: str
-    private: bool
-    html_url: str
-    description: Optional[str] = None
-    fork: bool
-    url: str
-    created_at: str
-    updated_at: str
-    pushed_at: str
-    homepage: Optional[str] = None
-    size: int
-    stargazers_count: int
-    watchers_count: int
-    language: Optional[str] = None
-    forks_count: int
-    open_issues_count: int
-    master_branch: Optional[str] = None
-    default_branch: str
-    score: float
-
-
-app = CloudAPI()
-
 s3 = S3Client()
 
 auth = CognitoClient()
 
+cf = CloudFlare()
 
 @app.post("/api/image")
 async def upload_picture(request: Request) -> str:
@@ -92,24 +36,20 @@ async def upload_picture(request: Request) -> str:
     )
     return f"https://s3.amazonaws.com/{cfg.AWS_S3_BUCKET}/{picture.filename}"
 
-
 @app.post("/api/signup")
 async def signup(user: UserSignUp) -> str:
     return await auth.signup_endpoint(
         user.email, user.password, user.email, user.name, user.picture
     )
 
-
 @app.post("/api/confirm")
 async def confirm(username: str, code: str) -> str:
     return await auth.confirm_signup(username, code)
-
 
 @app.post("/api/login")
 async def login(user: UserLogin) -> AuthenticationResult:
     response = await auth.login_endpoint(user.username, user.password)
     return AuthenticationResult(**response["AuthenticationResult"])
-
 
 @app.get("/api/user")
 async def get_user(token: str):
@@ -117,22 +57,18 @@ async def get_user(token: str):
     user = User(**dict(response))
     return await user.save()
 
-
 @app.post("/api/forgot")
 async def forgot_password(email: str):
     response = await auth.forgot_password(email)
     return response["CodeDeliveryDetails"]
 
-
 @app.post("/api/confirm-forgot")
 async def confirm_forgot_password(user: UserConfirmForgot):
     return await auth.confirm_forgot_password(user.username, user.code, user.password)
 
-
 @app.get("/api/users")
 async def get_users() -> List[User]:
     return await User.scan()
-
 
 @app.post("/api/github")
 async def callback(code: str):
@@ -163,22 +99,11 @@ async def callback(code: str):
     )
     return {"user": await user.save(), "token": access_token}
 
-
 @app.get("/api/github/repos")
 async def search_own_repos(token: str, query: str, login: str):
     gh = GithubClient(token)
-    response = await gh.get(f"/search/repositories?q={query}+user:{login}")
-    assert isinstance(response, dict)
-    return [GithubRepo(**repo) for repo in response["items"]]
+    return await gh.search_repos(query, login)
 
 
-@app.post("/api/github/pipeline")
-async def get_pipeline(body: ContainerCreate):
-    docker = DockerService()
-    volume = await docker.create_volume(tag=body.login)
-    python = await docker.create_container(body, volume)
-    codeserver = await docker.create_code_server(body, volume)
-    return {
-        "python_url": f"http://localhost:{python.host_port}/",
-        "codeserver_url": f"http://localhost:{codeserver.host_port}/",
-    }
+def main():
+    app.run()

@@ -48,6 +48,11 @@ class Configuration(BaseSettings):
     GH_API_TOKEN: str = Field(..., env="GH_API_TOKEN")
     GH_CLIENT_ID: str = Field(..., env="GH_CLIENT_ID")
     GH_CLIENT_SECRET: str = Field(..., env="GH_CLIENT_SECRET")
+    CF_API_KEY: str = Field(..., env="CF_API_KEY")
+    CF_EMAIL: str = Field(..., env="CF_EMAIL")
+    CF_ZONE_ID: str = Field(..., env="CF_ZONE_ID")
+    CF_ACCOUNT_ID: str = Field(..., env="CF_ACCOUNT_ID")
+    IP_ADDR: str = Field(..., env="IP_ADDR")
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

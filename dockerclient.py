@@ -21,6 +21,7 @@ class ContainerCreate(BaseModel):
     repo: str
     token: str
     email: str
+    image: str = "codeserver"
 
 
 class CodeServer(NoSQLModel):
@@ -39,7 +40,7 @@ class CodeServer(NoSQLModel):
     login: str = Field(..., index="pk")
     repo: str = Field(..., description="User reference", index="sk")
     container_id: Optional[str] = Field(default=None)
-    image: str = Field(default="app-codeserver", description="Image to use")
+    image: str = Field(default="codeserver", description="Image to use")
     host_port: int = Field(default_factory=gen_port, description="Port to expose")
     email: str = Field(..., description="Email of the user")
     env_vars: Optional[List[str]] = Field(
@@ -47,9 +48,19 @@ class CodeServer(NoSQLModel):
     )
 
     def payload(self, token: str, volume: str) -> JSON:
+        extensions = [
+            "ms-python.isort",
+            "ms-python.python",
+            "TabNine.tabnine-vscode",
+            "PKief.material-icon-theme",
+            "esbenp.prettier-vscode",
+            "ms-python.isort",
+            "ms-pyright.pyright",
+            "RobbOwen.synthwave-vscode"
+        ]
         assert isinstance(self.env_vars, list)
-        self.env_vars.append(f"GITHUB_TOKEN={token}")
-        self.env_vars.append(f"REPO_URL=https://github.com/{self.login}/{self.repo}")
+        self.env_vars.append(f"GH_TOKEN={token}")
+        self.env_vars.append(f"GH_REPO=https://github.com/{self.login}/{self.repo}")
         self.env_vars.append(f"EMAIL={self.email}")
         self.env_vars.append(f"PASSWORD={self.login}")
         self.env_vars.append("TZ=America/New_York")
@@ -58,13 +69,16 @@ class CodeServer(NoSQLModel):
         self.env_vars.append(f"USER={self.login}")
         self.env_vars.append(f"SUDO_PASSWORD={self.login}")
         git_startup_script = f"""
-        #!/usr/bin/bash
         git clone https://github.com/{self.login}/{self.repo} /app
         git config --global user.name {self.login}
         git config --global user.email {self.login}@github.com
         git config --global credential.helper 'store --file=/tmp/git_credentials'
         echo https://github.com/{self.login}:{token} > /tmp/git_credentials
-        code-server --auth none
+        chmod 777 ./*
+        chmod 777 ./**/*
+        chmod 777 ./**/**/*
+        code-server --install-extension {','.join(extensions)}
+        code-server --auth {self.login} --bind-addr 0.0.0.0:{self.host_port} --disable-telemetry --disable-update-check
         """
         self.env_vars.append(f"STARTUP_SCRIPT={git_startup_script}")
         return {
@@ -93,7 +107,7 @@ class Container(NoSQLModel):
 
     login: Optional[str] = Field(default=None, index="pk")
     repo: str = Field(..., description="Github Repo", index="sk")
-    image: str = Field(default="app-fastapi", description="Image to use")
+    image: str = Field(..., description="Image to use")
     host_port: int = Field(default_factory=gen_port, description="Port to expose")
     container_port: int = Field(default=8080, description="Port to expose")
     env_vars: List[str] = Field(
@@ -103,9 +117,9 @@ class Container(NoSQLModel):
 
     def payload(self, token: str, volume: str) -> MaybeJson:
         assert isinstance(self.env_vars, list)
-        self.env_vars.append(f"GITHUB_TOKEN={token}")
+        self.env_vars.append(f"GH_TOKEN={token}")
         self.env_vars.append(
-            f"GITHUB_REPO=https://github.com/{self.login}/{self.repo}]"
+            f"GH_REPO=https://github.com/{self.login}/{self.repo}]"
         )
         return {
             "Image": self.image,
