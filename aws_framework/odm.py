@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from .repository import *
+from .utils import gen_port
 
 
 class NoSQLModel(DynaModel):
     """DynamoDB ODM"""
-    
+
     @classmethod
-    def db(cls:Type[D]) -> Repository[D]:
+    def db(cls: Type[D]) -> Repository[D]:
         """Gets the repository instance."""
         return Repository[cls]()
 
@@ -17,41 +18,41 @@ class NoSQLModel(DynaModel):
         return item
 
     @classmethod
-    async def get(cls:Type[D], pk: str, sk: str) -> D:
+    async def get(cls: Type[D], pk: str, sk: str) -> D:
         """Gets an item from a DynamoDB table."""
-        return await cls.db().get(klass=cls, pk=pk, sk=sk) # type: ignore
+        return await cls.db().get(klass=cls, pk=pk, sk=sk)  # type: ignore
 
     @classmethod
-    async def scan(cls:Type[D]) -> List[D]:
+    async def scan(cls: Type[D]) -> List[D]:
         """Scans a DynamoDB table."""
-        return await cls.db().scan(klass=cls) # type: ignore
+        return await cls.db().scan(klass=cls)  # type: ignore
 
     @classmethod
-    async def put(cls:Type[D], instance: D)-> bool:
+    async def put(cls: Type[D], instance: D) -> bool:
         """Puts an item into a DynamoDB table."""
-        response = await cls.db().put(instance=instance) # type: ignore
-        if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+        response = await cls.db().put(instance=instance)  # type: ignore
+        if response["ResponseMetadata"]["HTTPStatusCode"] == 200:
             return True
         return False
-    
+
     @classmethod
     async def delete(cls, pk: str, sk: str) -> Dict[str, Any]:
         """Deletes an item from a DynamoDB table."""
         return await cls.db().delete(klass=cls, pk=pk, sk=sk)
 
     @classmethod
-    async def update(cls:Type[D], pk: str, sk: str, update: Dict[str, Any]) -> D:
+    async def update(cls: Type[D], pk: str, sk: str, update: Dict[str, Any]) -> D:
         """Updates an item in a DynamoDB table."""
-        return await cls.db().update(klass=cls, pk=pk, sk=sk, update=update) # type: ignore
+        return await cls.db().update(klass=cls, pk=pk, sk=sk, update=update)  # type: ignore
 
-    async def save(self:D) -> D:
+    async def save(self: D) -> D:
         """Saves an item into a DynamoDB table."""
         try:
-            return await self.get(self.dict()[self.pk()], self.dict()[self.sk()]) # type: ignore
+            return await self.get(self.dict()[self.pk()], self.dict()[self.sk()])  # type: ignore
         except:
             await self.put(self)
-            return await self.get(self.dict()[self.pk()], self.dict()[self.sk()]) # type: ignore
- 
+            return await self.get(self.dict()[self.pk()], self.dict()[self.sk()])  # type: ignore
+
     @classmethod
     async def drop_table(cls) -> Dict[str, Any]:
         """Drops a DynamoDB table."""

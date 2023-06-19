@@ -45,11 +45,10 @@ class Configuration(BaseSettings):
     AWS_ECR_URI: str = Field(..., env="AWS_ECR_URI")
     AWS_COGNITO_USER_POOL_ID: str = Field(..., env="AWS_COGNITO_USER_POOL_ID")
     AWS_COGNITO_CLIENT_ID: str = Field(..., env="AWS_COGNITO_CLIENT_ID")
-    GH_API_TOKEN:str = Field(...,env="GH_API_TOKEN")
-    GH_CLIENT_ID:str = Field(...,env="GH_CLIENT_ID")
-    GH_CLIENT_SECRET:str = Field(...,env="GH_CLIENT_SECRET")
-    
-    
+    GH_API_TOKEN: str = Field(..., env="GH_API_TOKEN")
+    GH_CLIENT_ID: str = Field(..., env="GH_CLIENT_ID")
+    GH_CLIENT_SECRET: str = Field(..., env="GH_CLIENT_SECRET")
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

@@ -19,7 +19,7 @@ class Repository(Generic[D]):
             name=instance.__class__.__name__, serialized=serialized
         )
 
-    async def scan(self, klass: Type[DynaModel]) -> List[D]:
+    async def scan(self, klass: Type[D]) -> List[D]:
         """Scans a DynamoDB table."""
         data = await self.service.scan(klass=klass)
         return await asyncio.gather(
@@ -33,17 +33,20 @@ class Repository(Generic[D]):
         except ClientError as e:
             return AWSFrameworkException(e.response["Error"]["Message"]).json()
 
-    async def get(self, klass: Type[DynaModel], pk: str, sk: str) -> D:
+    async def get(self, klass: Type[D], pk: str, sk: str) -> D:
         """Gets an item from a DynamoDB table."""
         data = await self.service.get(klass=klass, pk=pk, sk=sk)
-        return await self.service.deserialize(data["Item"])
+        response = await self.service.deserialize(data["Item"])
+        print(response)
+        print(type(response))
+        return klass(**response)
 
-    async def delete(self, klass: Type[DynaModel], pk: str, sk: str) -> Dict[str, Any]:
+    async def delete(self, klass: Type[D], pk: str, sk: str) -> Dict[str, Any]:
         """Deletes an item from a DynamoDB table."""
         return await self.service.delete(klass=klass, pk=pk, sk=sk)
 
     async def update(
-        self, klass: Type[DynaModel], pk: str, sk: str, update: Dict[str, Any]
+        self, klass: Type[D], pk: str, sk: str, update: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Updates an item in a DynamoDB table."""
         return await self.service.update(klass=klass, pk=pk, sk=sk, update=update)
@@ -60,6 +63,6 @@ class Repository(Generic[D]):
         """Lists all DynamoDB tables."""
         return await self.service.list_tables()
 
-    async def describe_table(self, klass: Type[DynaModel]) -> Dict[str, Any]:
+    async def describe_table(self, klass: Type[D]) -> Dict[str, Any]:
         """Describes a DynamoDB table."""
         return await self.service.describe_table(klass=klass)

@@ -92,3 +92,29 @@ class DynaModel(BaseModel):
     def dict(self, *args, **kwargs) -> dict[str, Any]:
         """Serializes the model to a dictionary."""
         return super().dict(*args, **kwargs, exclude_none=True)
+
+
+# Identity Objects
+
+
+class AttributeDefinition(BaseModel):
+    """Represents an attribute for describing the key schema for the table and indexes."""
+
+    AttributeName: str = Field(..., max_length=255)
+    AttributeType: str = Field(..., regex="^(S|N|B)$")
+
+
+class KeySchemaElement(BaseModel):
+    """Represents a single element of a key schema."""
+
+    AttributeName: str = Field(..., max_length=255)
+    KeyType: str = Field(..., regex="^(HASH|RANGE)$")
+
+
+class CreateTableInput(BaseModel):
+    """Represents the input of a CreateTable operation."""
+
+    TableName: str = Field(..., max_length=255)
+    AttributeDefinitions: List[AttributeDefinition]
+    KeySchema: List[KeySchemaElement]
+    BillingMode: str = Field("PAY_PER_REQUEST", const=True)

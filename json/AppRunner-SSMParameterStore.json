@@ -1,0 +1,14 @@
+{
+    "Statement": [
+      {
+        "Action": [
+          "ssm:GetParameters"
+        ],
+        "Effect": "Allow",
+        "Resource": [
+          "arn:aws:ssm:us-east-1:008356605572:parameter/<parameter_name>"
+        ]
+      }
+    ],
+    "Version": "2012-10-17"
+  }

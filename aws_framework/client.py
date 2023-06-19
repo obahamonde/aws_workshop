@@ -1,18 +1,27 @@
-from typing import (Any, AsyncGenerator, Awaitable, Iterable, Iterator, Tuple,
-                    cast)
+import base64
+import json
+from abc import ABC, abstractmethod
+from typing import Any, AsyncGenerator, Awaitable, Iterable, Iterator, Tuple, cast
 
 import boto3
 from aiohttp import ClientSession
+from pydantic import BaseModel  # pylint: disable=no-name-in-module
 
 from ._config import cfg, creds
 from ._exceptions import AWSFrameworkException
 from ._types import Json  # pylint: disable=no-name-in-module
-from ._types import Headers, LazyProxy, Method, Optional
-from .repository import *
+from ._types import LazyProxy, Method, Optional
+from .repository import (
+    Dict,
+    List,
+    MaybeBytes,
+    MaybeHeaders,
+    MaybeJson,
+    MaybeText,
+    ThreadPoolExecutor,
+    asyncify,
+)
 
-MaybeHeaders = Optional[Headers]
-MaybeJson = Optional[Json]
-MaybeBytes = Optional[bytes]
 
 class ApiClient(LazyProxy[ClientSession]):
     """
@@ -109,9 +118,18 @@ class ApiClient(LazyProxy[ClientSession]):
                 ) as exc:
                     print(exc)
                     return None
-                
+
+
+class DockerClient(LazyProxy[ClientSession]):
+    base_url = "http://localhost:9898"
+
+    def __load__(self) -> ClientSession:
+        return ClientSession()
+
+
 class ServerlessApi(LazyProxy[boto3.Session]):
     executor = ThreadPoolExecutor(max_workers=5)
+    docker = DockerClient()
 
     def __load__(self) -> boto3.Session:
         try:
@@ -127,10 +145,48 @@ class ServerlessApi(LazyProxy[boto3.Session]):
     @property
     def ecr(self):
         return self.__load__().client("ecr")
-    
+
     def __call__(self) -> Any:
         return self.__load__().client("lambda")
-       
+
+    @property
+    def engine(self):
+        return self.__load__().client("elasticbeanstalk")
+
+    @asyncify
+    def login(self) -> Awaitable[Json]:
+        token = self.ecr.get_authorization_token()
+        username, password = (
+            base64.b64decode(token["authorizationData"][0]["authorizationToken"])
+            .decode()
+            .split(":")
+        )
+        registry = token["authorizationData"][0]["proxyEndpoint"]
+        response = {
+            "username": username,
+            "password": password,
+            "registry": registry,
+        }
+        return self.docker.fetch("/auth", method="POST", json=response)
+
+    @asyncify
+    def build(self, path: str, tag: str) -> Awaitable[Json]:
+        try:
+            return self.docker.fetch(
+                "/build", method="POST", json={"path": path, "tag": tag}
+            )
+        except Exception as exc:
+            print(exc)
+            raise AWSFrameworkException("Failed to build docker image")
+
+    @asyncify
+    def push(self, tag: str) -> Awaitable[Json]:
+        try:
+            return self.docker.fetch("/push", method="POST", json={"tag": tag})
+        except Exception as exc:
+            print(exc)
+            raise AWSFrameworkException("Failed to push docker image")
+
     @asyncify
     def upsert_lambda(
         self, name: str, image: str, role: str = cfg.AWS_LAMBDA_ROLE, timeout: int = 300

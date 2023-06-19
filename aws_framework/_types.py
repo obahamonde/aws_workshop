@@ -21,6 +21,8 @@ Method = Literal[
     "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD", "TRACE", "CONNECT"
 ]
 
+DefaultImages = Literal["flask-app", "express-app", "fastapi-app"]
+
 Headers = Union[
     MultiDict[str],
     CIMultiDict[str],
@@ -103,30 +105,8 @@ class LazyProxy(Generic[T], ABC):
         ...
 
 
-# Identity Objects
-
-
-class AttributeDefinition(BaseModel):
-    """Represents an attribute for describing the key schema for the table and indexes."""
-
-    AttributeName: str = Field(..., max_length=255)
-    AttributeType: str = Field(..., regex="^(S|N|B)$")
-
-
-class KeySchemaElement(BaseModel):
-    """Represents a single element of a key schema."""
-
-    AttributeName: str = Field(..., max_length=255)
-    KeyType: str = Field(..., regex="^(HASH|RANGE)$")
-
-
-class CreateTableInput(BaseModel):
-    """Represents the input of a CreateTable operation."""
-
-    TableName: str = Field(..., max_length=255)
-    AttributeDefinitions: List[AttributeDefinition]
-    KeySchema: List[KeySchemaElement]
-    BillingMode: str = Field("PAY_PER_REQUEST", const=True)
-
-    class Config:
-        extra = "forbid"
+JSON = Union[Dict[str, Any], List[Dict[str, Any]]]
+MaybeHeaders = Optional[Headers]
+MaybeJson = Optional[JSON]
+MaybeBytes = Optional[bytes]
+MaybeText = Optional[str]

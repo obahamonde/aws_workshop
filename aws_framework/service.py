@@ -9,7 +9,7 @@ from boto3.dynamodb.types import TypeDeserializer, TypeSerializer
 from ._config import AWSCredentials, creds
 from ._decorators import asyncify
 from ._types import *
-from .data import DynaModel, Field
+from .data import *
 
 D = TypeVar("D", bound=DynaModel)
 
@@ -103,8 +103,6 @@ class Service(Generic[D]):
     serializer: Serializer[D] = Serializer[D]()
     builder: ConditionExpressionBuilder = ConditionExpressionBuilder()
 
-   
-
     async def table_input(self, class_name: Type[D]) -> CreateTableInput:
         """Converts a Pydantic model to a DynamoDB table input."""
         return await self.serializer.table_input(class_name)
@@ -118,7 +116,7 @@ class Service(Generic[D]):
         return self.serializer.deserialize(dct)
 
     @asyncify
-    def create_table(self, table_input: CreateTableInput) -> Awaitable[Dict[str, Any]]:
+    def create_table(self, table_input: CreateTableInput) -> Awaitable[JSON]:
         """Creates a DynamoDB table."""
         return self.client.create_table(**table_input.dict())
 
@@ -183,4 +181,3 @@ class Service(Generic[D]):
     def describe_table(self, klass: Type[DynaModel]) -> Awaitable[Dict[str, Any]]:
         """Describes a DynamoDB table."""
         return self.client.describe_table(TableName=klass.__name__)
-

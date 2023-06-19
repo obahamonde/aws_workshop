@@ -243,6 +243,7 @@ def _(response: BaseModel) -> Response:
         content_type="application/json",
     )
 
+
 @do_response.register(NoSQLModel)
 def _(response: NoSQLModel) -> Response:
     return Response(
