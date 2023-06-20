@@ -1,12 +1,13 @@
-FROM node:lts-alpine
+FROM node:14.15.4-alpine3.12
 
 WORKDIR /app
 
-RUN yarn global add vite && \
-    yarn create vite --template vue-ts . && \
-    yarn install
+COPY package.json /app
 
+RUN npm install
 
 EXPOSE 8080
 
-CMD ["yarn", "dev", "--host", "--port", "8080"]
+COPY . /app
+
+CMD ["npm", "run", "dev"]

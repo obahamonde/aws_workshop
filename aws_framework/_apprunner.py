@@ -19,30 +19,29 @@ class AppRunner(LazyProxy[Session]):
         )
 
     @asyncify
-    def create_github_connection(self, name:str) -> Awaitable[JSON]:
+    def create_github_connection(self, name: str) -> Awaitable[JSON]:
         response = self.__load__().create_connection(
-            ConnectionName=name,
-            ProviderType="GITHUB"
+            ConnectionName=name, ProviderType="GITHUB"
         )
         return cast(Awaitable[JSON], response)
 
     @asyncify
-    def create_service(self, service: ServiceConfigurationT)-> Awaitable[JSON]:
+    def create_service(self, service: ServiceConfigurationT) -> Awaitable[JSON]:
         if service.source_configuration.code_repository:
             source_configuration = {
                 "CodeRepository": {
                     "RepositoryUrl": service.source_configuration.code_repository,
                 }
-            }   
+            }
         else:
             source_configuration = {
                 "ImageRepository": {
                     "ImageIdentifier": service.source_configuration.image_repository,
                 }
             }
-        response = self.__load__().create_service(  
+        response = self.__load__().create_service(
             ServiceName=service.service_name,
-            SourceConfiguration=source_configuration,   
+            SourceConfiguration=source_configuration,
             InstanceConfiguration={
                 "Cpu": service.source_configuration.instance_configuration.cpu,
                 "Memory": service.source_configuration.instance_configuration.memory,
@@ -57,6 +56,8 @@ class AppRunner(LazyProxy[Session]):
             ImageConfiguration=service.source_configuration.image_repository.image_configuration,
         )
         return cast(Awaitable[JSON], response)
+
+
 class Ecr(LazyProxy[Session]):
     executor = ThreadPoolExecutor(max_workers=10)
 
@@ -72,4 +73,7 @@ class Ecr(LazyProxy[Session]):
         decoded = base64.b64decode(token).decode()
         username, password = decoded.split(":")
         registry = response["authorizationData"][0]["proxyEndpoint"]
-        return cast(Awaitable[AuthResult], AuthResult(username=username, password=password, registry=registry))
+        return cast(
+            Awaitable[AuthResult],
+            AuthResult(username=username, password=password, registry=registry),
+        )

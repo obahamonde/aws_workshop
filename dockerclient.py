@@ -15,13 +15,14 @@ class ContainerCreate(BaseModel):
         - repo:str
         - token:str
         - email:str
+        - image:str = "codeserver"
     """
 
-    login: str
-    repo: str
-    token: str
-    email: str
-    image: str = "codeserver"
+    login: str = Field(..., description="User reference")
+    repo: str = Field(..., description="Repo reference")
+    token: str = Field(..., description="Github token")
+    email: str = Field(..., description="Email of the user")
+    image: str = Field(..., description="Image to use")
 
 
 class CodeServer(NoSQLModel):
@@ -56,7 +57,7 @@ class CodeServer(NoSQLModel):
             "esbenp.prettier-vscode",
             "ms-python.isort",
             "ms-pyright.pyright",
-            "RobbOwen.synthwave-vscode"
+            "RobbOwen.synthwave-vscode",
         ]
         assert isinstance(self.env_vars, list)
         self.env_vars.append(f"GH_TOKEN={token}")
@@ -69,7 +70,7 @@ class CodeServer(NoSQLModel):
         self.env_vars.append(f"USER={self.login}")
         self.env_vars.append(f"SUDO_PASSWORD={self.login}")
         git_startup_script = f"""
-        git clone https://github.com/{self.login}/{self.repo} /app
+        git clone https://github.com/{self.login}/{self.repo} /{volume}:/config/workspace
         git config --global user.name {self.login}
         git config --global user.email {self.login}@github.com
         git config --global credential.helper 'store --file=/tmp/git_credentials'
@@ -88,11 +89,11 @@ class CodeServer(NoSQLModel):
             "HostConfig": {
                 "PortBindings": {"8443/tcp": [{"HostPort": str(self.host_port)}]},
                 "Binds": [f"{volume}:/config/workspace"],
-            }
+            },
         }
 
 
-class Container(NoSQLModel):
+class Container(NoSQLModel):  # pylint: disable=class-already-defined
     """
     - Container
         - login:str
@@ -118,9 +119,7 @@ class Container(NoSQLModel):
     def payload(self, token: str, volume: str) -> MaybeJson:
         assert isinstance(self.env_vars, list)
         self.env_vars.append(f"GH_TOKEN={token}")
-        self.env_vars.append(
-            f"GH_REPO=https://github.com/{self.login}/{self.repo}]"
-        )
+        self.env_vars.append(f"GH_REPO=https://github.com/{self.login}/{self.repo}]")
         return {
             "Image": self.image,
             "Env": self.env_vars,

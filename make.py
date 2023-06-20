@@ -1,12 +1,12 @@
 #!env/bin/python3
 
-import subprocess
 import os
+import subprocess
 
 CONTAINERS_PATH = "./scripts/containers"
-CONTAINERS = ["fastapi","flask","express","codeserver","react","vue"]
+CONTAINERS = ["fastapi","flask","express","codeserver","react","vue","php"]
 
-def build_containers():
+def main():
 	for container in CONTAINERS:
 		pwd = os.getcwd()
 		os.chdir(f"{CONTAINERS_PATH}/{container}")
@@ -15,4 +15,4 @@ def build_containers():
 		os.chdir(pwd)
 		
 if __name__ == "__main__":
-	build_containers()
+	main()

@@ -6,7 +6,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 
-CMD ["echo", "$STARTUP_SCRIPT", ">", "/config/workspace/startup.sh", "&&", "chmod", "+x", "/config/workspace/startup.sh", "&&", "/config/workspace/startup.sh"]
+#CMD ["echo", "$STARTUP_SCRIPT", ">", "/config/workspace/startup.sh", "&&", "chmod", "+x", "/config/workspace/startup.sh", "&&", "sh", "/config/workspace/startup.sh"]
 
 
 # docker run -d -p 8080:8080 -v data:/app python-dev
